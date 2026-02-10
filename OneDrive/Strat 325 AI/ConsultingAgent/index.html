@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulting Agent — Strategic Advisory & Deck Builder</title>
+    <meta name="description"
+        content="AI-powered senior management consulting assistant for strategic transformations, executive proposals, and McKinsey-caliber slide decks.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="api-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path
+                        d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.743 5.743L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.586a1 1 0 0 1 .293-.707l5.964-5.964A6 6 0 1 1 21 9z" />
+                </svg>
+            </div>
+            <h2>Connect Your AI Engine</h2>
+            <p>Enter your OpenAI API key to power the consulting assistant. Your key is stored locally and never leaves
+                your browser.</p>
+            <div class="input-group">
+                <label for="api-key-input">OpenAI API Key</label>
+                <input type="password" id="api-key-input" placeholder="sk-..." autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label for="model-select">Model</label>
+                <select id="model-select">
+                    <option value="gpt-4o">GPT-4o (Recommended)</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini (Faster)</option>
+                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                </select>
+            </div>
+            <button id="api-submit-btn" class="btn-primary" onclick="saveApiKey()">
+                <span>Launch Assistant</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+            </button>
+            <p class="modal-footnote">Powered by OpenAI • Your data stays local</p>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div id="app-container" class="app-container hidden">
+
+        <!-- Left Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-mark">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8">
+                        <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2" />
+                        <line x1="12" y1="22" x2="12" y2="15.5" />
+                        <polyline points="22 8.5 12 15.5 2 8.5" />
+                        <polyline points="2 15.5 12 8.5 22 15.5" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="logo-text">Consulting Agent</h1>
+                    <span class="logo-subtitle">Strategic Advisory</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-panel="chat" onclick="switchPanel('chat')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>Advisory Chat</span>
+                </button>
+                <button class="nav-btn" data-panel="deck" onclick="switchPanel('deck')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <line x1="8" y1="21" x2="16" y2="21" />
+                        <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                    <span>Deck Builder</span>
+                </button>
+                <button class="nav-btn" data-panel="frameworks" onclick="switchPanel('frameworks')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                    </svg>
+                    <span>Frameworks</span>
+                </button>
+                <button class="nav-btn" data-panel="scqa" onclick="switchPanel('scqa')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    <span>SCQA Builder</span>
+                </button>
+                <button class="nav-btn" data-panel="prompts" onclick="switchPanel('prompts')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
+                    <span>Quick Prompts</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="settings-btn" onclick="openSettings()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                    <span>Settings</span>
+                </button>
+                <button class="settings-btn" onclick="clearChat()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    <span>New Session</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- ========== CHAT PANEL ========== -->
+            <div id="panel-chat" class="panel active">
+                <div class="chat-header">
+                    <div class="chat-header-left">
+                        <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="3" y1="12" x2="21" y2="12" />
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <line x1="3" y1="18" x2="21" y2="18" />
+                            </svg>
+                        </button>
+                        <div class="status-indicator"></div>
+                        <div>
+                            <h2>Strategic Advisory Session</h2>
+                            <span class="session-meta">Senior Consultant • Project Leader Level</span>
+                        </div>
+                    </div>
+                    <div class="chat-header-right">
+                        <div class="model-badge" id="model-badge">GPT-4o</div>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message assistant-message fade-in">
+                        <div class="message-avatar">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.8">
+                                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2" />
+                                <line x1="12" y1="22" x2="12" y2="15.5" />
+                                <polyline points="22 8.5 12 15.5 2 8.5" />
+                            </svg>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-role">Consulting Agent</div>
+                            <div class="message-text">
+                                <p>Good to connect. I'm your Senior Management Consultant, operating at the Project
+                                    Leader / Engagement Manager level.</p>
+                                <p>My focus is on <strong>moving the needle on ROIC and Enterprise Value</strong>
+                                    through rigorous, hypothesis-driven strategic analysis.</p>
+                                <p>Here's how I work:</p>
+                                <ul>
+                                    <li><strong>MECE Structure</strong> — All analysis is Mutually Exclusive,
+                                        Collectively Exhaustive</li>
+                                    <li><strong>Pyramid Principle</strong> — Conclusions first, evidence below</li>
+                                    <li><strong>Level 3 Synthesis</strong> — Every recommendation has the "so what" and
+                                        "now what"</li>
+                                    <li><strong>Action-Oriented</strong> — Slide headlines that tell you what to DO, not
+                                        just what IS</li>
+                                </ul>
+                                <p>What strategic challenge are we working on today?</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <div class="input-wrapper">
+                        <textarea id="chat-input" placeholder="Describe your strategic challenge..." rows="1"
+                            onkeydown="handleKeyDown(event)"></textarea>
+                        <button id="send-btn" class="send-btn" onclick="sendMessage()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13" />
+                                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="input-hint">Press <kbd>Enter</kbd> to send • <kbd>Shift+Enter</kbd> for new line •
+                        <kbd>Ctrl+K</kbd> to focus</p>
+                </div>
+            </div>
+
+            <!-- ========== DECK BUILDER PANEL ========== -->
+            <div id="panel-deck" class="panel">
+                <div class="panel-header">
+                    <h2>Executive Deck Builder</h2>
+                    <p>Generate McKinsey-caliber slide decks with action-oriented headlines, SCQA structure, and
+                        horizontal logic. Every slide passes the "So What?" test.</p>
+                </div>
+                <div class="deck-workspace">
+                    <!-- Deck Configuration -->
+                    <div class="deck-config">
+                        <div class="input-group full-span">
+                            <label for="deck-topic">Proposal / Deck Topic</label>
+                            <textarea id="deck-topic"
+                                placeholder="e.g., 'Strategic review of North American expansion for a $500M B2B SaaS company facing 15% churn in the mid-market segment'&#10;&#10;Be specific: include company context, challenge, and desired outcome."></textarea>
+                        </div>
+                        <div class="input-group full-span">
+                            <label for="deck-context">Supporting Context & Data (Optional)</label>
+                            <textarea id="deck-context"
+                                placeholder="Paste any relevant data, metrics, prior analysis, or constraints.&#10;&#10;e.g., 'Current ARR: $240M, NRR dropped from 120% to 98% over 2 quarters. Enterprise retention is 95% vs. mid-market 82%. LTV/CAC: Enterprise 4.2x, Mid-market 1.8x.'"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="deck-audience">Target Audience</label>
+                            <input type="text" id="deck-audience" placeholder="e.g., CEO & Board of Directors"
+                                style="font-family: var(--font-sans);">
+                        </div>
+                        <div class="input-group">
+                            <label for="deck-type">Deck Type</label>
+                            <select id="deck-type">
+                                <option value="strategic_recommendation">Strategic Recommendation</option>
+                                <option value="consulting_proposal">Consulting Proposal</option>
+                                <option value="board_presentation">Board Presentation</option>
+                                <option value="investor_pitch">Investor Pitch</option>
+                                <option value="due_diligence">Due Diligence Report</option>
+                                <option value="transformation_plan">Transformation Plan</option>
+                                <option value="market_entry">Market Entry Analysis</option>
+                                <option value="ma_rationale">M&A Strategic Rationale</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="deck-slide-count">Number of Slides</label>
+                            <select id="deck-slide-count">
+                                <option value="5">5 slides (Executive Brief)</option>
+                                <option value="8">8 slides (Standard)</option>
+                                <option value="10" selected>10 slides (Comprehensive)</option>
+                                <option value="15">15 slides (Deep Dive)</option>
+                                <option value="20">20 slides (Full Engagement)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="deck-style">Analytical Style</label>
+                            <select id="deck-style">
+                                <option value="mckinsey">McKinsey (Structured, Data-Heavy)</option>
+                                <option value="bcg">BCG (Creative, Matrix-Driven)</option>
+                                <option value="bain">Bain (Results-Oriented, Pragmatic)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Generate Actions -->
+                    <div class="deck-actions">
+                        <button class="btn-primary" onclick="generateDeck()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
+                            <span>Generate Deck</span>
+                        </button>
+                        <button class="btn-secondary" onclick="exportDeckJSON()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            <span>Export JSON</span>
+                        </button>
+                        <button class="btn-secondary" onclick="exportDeckMarkdown()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                            <span>Export MD</span>
+                        </button>
+                        <button class="btn-secondary" onclick="exportDeckHTML()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="16 18 22 12 16 6" />
+                                <polyline points="8 6 2 12 8 18" />
+                            </svg>
+                            <span>Export HTML</span>
+                        </button>
+                    </div>
+
+                    <!-- Slide Preview Area -->
+                    <div class="slide-preview-container" id="slide-preview-area">
+                        <!-- Empty State -->
+                        <div class="slide-card" style="border-style: dashed; border-color: var(--border-medium);">
+                            <div class="slide-preview"
+                                style="align-items: center; justify-content: center; text-align: center; background: var(--bg-glass);">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1" style="color: var(--text-tertiary); margin-bottom: 16px;">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                                    <line x1="8" y1="21" x2="16" y2="21" />
+                                    <line x1="12" y1="17" x2="12" y2="21" />
+                                </svg>
+                                <div class="slide-title-bar" style="font-size: 1.1rem; color: var(--text-secondary);">
+                                    Your executive deck will appear here</div>
+                                <div
+                                    style="font-size: 0.82rem; color: var(--text-tertiary); max-width: 500px; line-height: 1.6; margin-top: 8px;">
+                                    Fill in your proposal topic and context above, then click <strong
+                                        style="color: var(--accent-secondary);">Generate Deck</strong> to create a
+                                    McKinsey-caliber presentation with action-oriented headlines and SCQA structure.
+                                </div>
+                                <div
+                                    style="display: flex; gap: 24px; margin-top: 24px; font-size: 0.75rem; color: var(--text-tertiary);">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: var(--accent-primary);">◆</span> Pyramid Principle
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: var(--accent-cyan);">◆</span> MECE Structure
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: var(--accent-emerald);">◆</span> So-What Tested
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== FRAMEWORKS PANEL ========== -->
+            <div id="panel-frameworks" class="panel">
+                <div class="panel-header">
+                    <h2>Consulting Frameworks</h2>
+                    <p>The strategic toolbox. Click any framework to load it into your advisory session with a
+                        structured prompt.</p>
+                </div>
+                <div class="frameworks-grid" id="frameworks-grid"></div>
+            </div>
+
+            <!-- ========== SCQA BUILDER PANEL ========== -->
+            <div id="panel-scqa" class="panel">
+                <div class="panel-header">
+                    <h2>SCQA Builder</h2>
+                    <p>Structure your executive communication using Situation-Complication-Question-Answer. The
+                        mandatory format for any proposal introduction.</p>
+                </div>
+                <div class="scqa-builder">
+                    <div class="scqa-card" data-letter="S">
+                        <div class="scqa-label">
+                            <span class="scqa-letter">S</span>
+                            <span>Situation</span>
+                        </div>
+                        <textarea id="scqa-s"
+                            placeholder="The undisputed facts. What is the current state that everyone agrees on?&#10;&#10;Example: 'Our SaaS platform has 12,000 enterprise customers and $240M ARR, growing at 15% YoY for the past three years.'"></textarea>
+                    </div>
+                    <div class="scqa-card" data-letter="C">
+                        <div class="scqa-label">
+                            <span class="scqa-letter">C</span>
+                            <span>Complication</span>
+                        </div>
+                        <textarea id="scqa-c"
+                            placeholder="The tension. What has changed or what's at risk?&#10;&#10;Example: 'However, net revenue retention has dropped from 120% to 98% over two quarters, driven by mid-market churn.'"></textarea>
+                    </div>
+                    <div class="scqa-card" data-letter="Q">
+                        <div class="scqa-label">
+                            <span class="scqa-letter">Q</span>
+                            <span>Question</span>
+                        </div>
+                        <textarea id="scqa-q"
+                            placeholder="The key question this raises for the leadership team.&#10;&#10;Example: 'Should we double down on mid-market with retention investments, or pivot resources to the Enterprise segment?'"></textarea>
+                    </div>
+                    <div class="scqa-card" data-letter="A">
+                        <div class="scqa-label">
+                            <span class="scqa-letter">A</span>
+                            <span>Answer</span>
+                        </div>
+                        <textarea id="scqa-a"
+                            placeholder="Your synthesized recommendation (Level 3).&#10;&#10;Example: 'Pivot to Enterprise. The data shows Enterprise LTV/CAC is 4.2x vs. mid-market's 1.8x, and retention is 95% vs. 82%.'"></textarea>
+                    </div>
+                    <div class="scqa-actions">
+                        <button class="btn-primary" onclick="analyzeSCQA()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
+                            <span>Get AI Analysis</span>
+                        </button>
+                        <button class="btn-secondary" onclick="copySCQA()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            </svg>
+                            <span>Copy to Clipboard</span>
+                        </button>
+                        <button class="btn-ghost" onclick="clearSCQA()">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== QUICK PROMPTS PANEL ========== -->
+            <div id="panel-prompts" class="panel">
+                <div class="panel-header">
+                    <h2>Quick Prompts</h2>
+                    <p>Pre-built consulting scenarios to jumpstart your session. Click to load directly into the
+                        advisory chat.</p>
+                </div>
+                <div class="prompts-grid" id="prompts-grid"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

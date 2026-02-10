@@ -113,11 +113,53 @@ DECK STORYLINE STRUCTURE:
 
 Always output valid JSON. Do not include any text before or after the JSON.`;
 
+// ---- Research System Prompt ----
+const RESEARCH_PROMPT = `You are a Senior Research Analyst at a top-tier management consulting firm (McKinsey, BCG, Bain). Your job is to provide deep, data-driven research to support executive slide decks.
+
+For the given slide topic, provide comprehensive research structured as follows:
+
+1. **KEY DATA POINTS** (3-5 specific, quantified facts)
+   - Include exact numbers, percentages, dollar amounts
+   - Cite the source or basis (e.g., "Based on McKinsey Global Institute 2024 report")
+   - Include year/timeframe for each data point
+
+2. **INDUSTRY BENCHMARKS** (2-3 relevant comparisons)
+   - Best-in-class performance metrics
+   - Industry median/average
+   - How this compares to the topic at hand
+
+3. **CASE STUDIES** (1-2 relevant real-world examples)
+   - Company name and context
+   - What they did and the quantified outcome
+   - The "So What" — why this matters for our analysis
+
+4. **MARKET CONTEXT** (2-3 macro trends)
+   - Market size and growth trajectory
+   - Key regulatory or technology shifts
+   - Competitive dynamics
+
+5. **RISKS & COUNTER-ARGUMENTS** (2-3 considerations)
+   - What could undermine this thesis?
+   - What data would we need to validate assumptions?
+   - Second-order effects to consider
+
+6. **RECOMMENDED DATA VISUALIZATIONS**
+   - What charts/graphs would best communicate these findings?
+   - What axes, segments, or comparisons to highlight?
+
+IMPORTANT RULES:
+- Be SPECIFIC — no vague claims. Every statement should have a number or a concrete example.
+- Use Level 3 Synthesis — don't just report data, explain what it MEANS for the decision.
+- Flag data confidence levels: [HIGH] = well-established, [MEDIUM] = reasonable estimate, [LOW] = directional only.
+- If you don't have exact current data, provide the best available estimate with a clearly stated basis.
+- Format your response in clean Markdown with clear section headers.`;
+
 // ---- State ----
 let apiKey = localStorage.getItem('consulting_agent_api_key') || '';
 let selectedModel = localStorage.getItem('consulting_agent_model') || 'gpt-4o';
 let chatHistory = [];
 let currentDeckSlides = [];
+let slideResearch = {};  // Map of slideIndex -> research data
 let isStreaming = false;
 
 // ---- Initialization ----
@@ -442,11 +484,33 @@ function renderSlidePreview(slides) {
             `<div class="bullet"><span class="bullet-marker"></span><span contenteditable="true">${escapeHtml(b)}</span></div>`
         ).join('');
 
+        // Check if research already exists for this slide
+        const hasResearch = slideResearch[index];
+        const researchBtnLabel = hasResearch ? '📄 View Research' : '🔬 Research';
+        const researchPanelHtml = hasResearch
+            ? `<div class="research-panel" id="research-panel-${index}" style="display: none;">
+                <div class="research-panel-header">
+                    <span class="research-panel-title">🔬 Research Findings</span>
+                    <div class="research-panel-actions">
+                        <button class="slide-action-btn" onclick="researchSlide(${index})">🔄 Re-research</button>
+                        <button class="slide-action-btn" onclick="applyResearchToSlide(${index})">📥 Apply to Slide</button>
+                    </div>
+                </div>
+                <div class="research-content">${renderMarkdown(slideResearch[index])}</div>
+              </div>`
+            : `<div class="research-panel" id="research-panel-${index}" style="display: none;">
+                <div class="research-loading">
+                    <div class="research-loading-spinner"></div>
+                    <span>Researching this topic...</span>
+                </div>
+              </div>`;
+
         card.innerHTML = `
             <div class="slide-card-header">
                 <span class="slide-number">Slide ${slide.slideNumber || index + 1} — ${typeLabel}</span>
                 <div class="slide-card-actions">
                     ${chartBadge}
+                    <button class="slide-action-btn research-btn" onclick="toggleResearchPanel(${index})">${researchBtnLabel}</button>
                     <button class="slide-action-btn" onclick="editSlideWithAI(${index})">✨ Refine</button>
                     <button class="slide-action-btn" onclick="deleteSlide(${index})">✕</button>
                 </div>
@@ -464,6 +528,7 @@ function renderSlidePreview(slides) {
             <div style="padding: 12px 18px; border-top: 1px solid var(--border-subtle); font-size: 0.78rem; color: var(--text-tertiary);">
                 <strong style="color: var(--text-secondary);">Speaker Notes:</strong> ${escapeHtml(slide.speakerNotes)}
             </div>` : ''}
+            ${researchPanelHtml}
         `;
 
         container.appendChild(card);
@@ -561,6 +626,217 @@ Provide specific improvements to any weak headlines, ensuring they remain action
 
     document.getElementById('chat-input').value = message;
     await sendMessage();
+}
+
+// ---- Research Functions ----
+async function researchSlide(index) {
+    const slide = currentDeckSlides[index];
+    if (!slide) return;
+
+    // Show the research panel with loading state
+    const panel = document.getElementById(`research-panel-${index}`);
+    if (panel) {
+        panel.style.display = 'block';
+        panel.innerHTML = `
+            <div class="research-loading">
+                <div class="research-loading-spinner"></div>
+                <span>Researching: "${escapeHtml(slide.headline.substring(0, 60))}${slide.headline.length > 60 ? '...' : ''}"</span>
+            </div>
+        `;
+    }
+
+    // Build context from the full deck for better research
+    const deckContext = currentDeckSlides.map((s, i) =>
+        `Slide ${i + 1}: ${s.headline}`
+    ).join('\n');
+
+    const researchPrompt = `Research the following slide topic in depth. This slide is part of a larger deck.
+
+SLIDE TO RESEARCH:
+- Headline: ${slide.headline}
+- Type: ${slide.type || 'analysis'}
+- Key Points: ${(slide.bullets || []).join('; ')}
+${slide.subtitle ? `- Subtitle: ${slide.subtitle}` : ''}
+
+FULL DECK CONTEXT (for reference):
+${deckContext}
+
+Provide comprehensive research following the structured format in your instructions. Be specific, quantitative, and actionable. Every data point should strengthen the slide's argument.`;
+
+    try {
+        const response = await callOpenAI(
+            [{ role: 'user', content: researchPrompt }],
+            RESEARCH_PROMPT
+        );
+
+        // Store the research
+        slideResearch[index] = response;
+
+        // Re-render to show results
+        if (panel) {
+            panel.innerHTML = `
+                <div class="research-panel-header">
+                    <span class="research-panel-title">🔬 Research Findings</span>
+                    <div class="research-panel-actions">
+                        <button class="slide-action-btn" onclick="researchSlide(${index})">🔄 Re-research</button>
+                        <button class="slide-action-btn" onclick="applyResearchToSlide(${index})">📥 Apply to Slide</button>
+                        <button class="slide-action-btn" onclick="copyResearch(${index})">📋 Copy</button>
+                    </div>
+                </div>
+                <div class="research-content">${renderMarkdown(response)}</div>
+            `;
+        }
+
+        // Update the button text
+        const btn = document.querySelector(`#slide-${index} .research-btn`);
+        if (btn) btn.textContent = '📄 View Research';
+
+        showToast(`Research complete for Slide ${index + 1}`, 'success');
+    } catch (error) {
+        if (panel) {
+            panel.innerHTML = `
+                <div class="research-panel-header">
+                    <span class="research-panel-title" style="color: var(--accent-rose);">⚠ Research Failed</span>
+                </div>
+                <div class="research-content" style="padding: 16px; color: var(--text-secondary);">
+                    <p>${escapeHtml(error.message)}</p>
+                    <button class="btn-secondary" style="margin-top: 12px;" onclick="researchSlide(${index})">Try Again</button>
+                </div>
+            `;
+        }
+        showToast(`Research error: ${error.message}`, 'error');
+    }
+}
+
+async function researchAllSlides() {
+    if (currentDeckSlides.length === 0) {
+        showToast('No slides to research. Generate a deck first.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('research-all-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="typing-indicator" style="gap:3px"><span></span><span></span><span></span></span> <span>Researching all slides...</span>`;
+    }
+
+    const total = currentDeckSlides.length;
+    let completed = 0;
+
+    for (let i = 0; i < currentDeckSlides.length; i++) {
+        // Show panel for this slide
+        const panel = document.getElementById(`research-panel-${i}`);
+        if (panel) panel.style.display = 'block';
+
+        await researchSlide(i);
+        completed++;
+
+        if (btn) {
+            btn.innerHTML = `<span class="typing-indicator" style="gap:3px"><span></span><span></span><span></span></span> <span>Researching ${completed}/${total}...</span>`;
+        }
+    }
+
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Research All Slides</span>`;
+    }
+
+    showToast(`Research complete for all ${total} slides`, 'success');
+}
+
+function toggleResearchPanel(index) {
+    const panel = document.getElementById(`research-panel-${index}`);
+    if (!panel) return;
+
+    const isVisible = panel.style.display !== 'none';
+
+    if (isVisible) {
+        panel.style.display = 'none';
+    } else {
+        panel.style.display = 'block';
+        // If no research exists yet, trigger research
+        if (!slideResearch[index]) {
+            researchSlide(index);
+        }
+    }
+}
+
+async function applyResearchToSlide(index) {
+    const slide = currentDeckSlides[index];
+    const research = slideResearch[index];
+    if (!slide || !research) {
+        showToast('No research available to apply', 'error');
+        return;
+    }
+
+    showToast('Enhancing slide with research data...', 'success');
+
+    try {
+        const response = await callOpenAI([{
+            role: 'user',
+            content: `Enhance this slide using the research findings below. Update the headline and bullets to incorporate specific data points and benchmarks from the research. Return ONLY a JSON object with the same slide structure.
+
+CURRENT SLIDE:
+${JSON.stringify(slide, null, 2)}
+
+RESEARCH FINDINGS:
+${research}
+
+Rules:
+1. The headline must remain action-oriented but now include a specific data point
+2. Replace vague bullets with quantified, research-backed statements
+3. Add [Source] tags to key claims where the research provides sources
+4. Keep the slide scannable — max 5 bullets
+5. Maintain vertical logic — every bullet must prove the headline
+6. Return valid JSON only.`
+        }], SLIDE_DECK_PROMPT);
+
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            let parsed = JSON.parse(jsonMatch[0]);
+            const refinedSlide = parsed.slides ? parsed.slides[0] : parsed;
+            refinedSlide.slideNumber = index + 1;
+            currentDeckSlides[index] = refinedSlide;
+            renderSlidePreview(currentDeckSlides);
+            showToast('Slide enhanced with research data', 'success');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+function copyResearch(index) {
+    const research = slideResearch[index];
+    if (!research) {
+        showToast('No research to copy', 'error');
+        return;
+    }
+    navigator.clipboard.writeText(research).then(() => {
+        showToast('Research copied to clipboard', 'success');
+    });
+}
+
+function exportAllResearch() {
+    if (Object.keys(slideResearch).length === 0) {
+        showToast('No research to export. Research slides first.', 'error');
+        return;
+    }
+
+    let md = `# Research Report\n\nGenerated: ${new Date().toLocaleDateString()}\n\n---\n\n`;
+
+    currentDeckSlides.forEach((slide, index) => {
+        md += `## Slide ${index + 1}: ${slide.headline}\n\n`;
+        if (slideResearch[index]) {
+            md += slideResearch[index] + '\n\n';
+        } else {
+            md += '_No research conducted for this slide._\n\n';
+        }
+        md += `---\n\n`;
+    });
+
+    const blob = new Blob([md], { type: 'text/markdown' });
+    downloadBlob(blob, 'deck_research_report.md');
+    showToast('Research report exported', 'success');
 }
 
 // ---- Export Functions ----

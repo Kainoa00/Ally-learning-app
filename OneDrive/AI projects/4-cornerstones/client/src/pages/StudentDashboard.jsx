@@ -9,16 +9,23 @@ import {
     UserCircle,
     Check,
     AlertCircle,
+    MessageSquare,
 } from 'lucide-react';
 import { getMyClasses, joinClassWithCode } from '../services/classService';
 import { supabase } from '../supabaseClient';
 import { formatStyleName } from '../utils/varkCalculator';
+import StudentMaterials from '../components/StudentMaterials';
+import NotificationCenter from '../components/NotificationCenter';
+import DiscussionBoard from '../components/DiscussionBoard';
+import StudyGroups from '../components/StudyGroups';
 
 export default function StudentDashboard() {
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showJoinModal, setShowJoinModal] = useState(false);
     const [profile, setProfile] = useState(null);
+    const [selectedClassForDiscussions, setSelectedClassForDiscussions] = useState(null);
+    const [selectedClassForGroups, setSelectedClassForGroups] = useState(null);
 
     useEffect(() => {
         loadClasses();
@@ -96,6 +103,21 @@ export default function StudentDashboard() {
                 className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-purple-500 rounded-lg"></div>
+                            <span className="font-serif font-bold text-xl tracking-tight">4 Cornerstones</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <NotificationCenter />
+                            <button
+                                onClick={() => supabase.auth.signOut()}
+                                className="text-sm text-gray-500 hover:text-red-500 transition-colors font-medium"
+                            >
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h1 className="text-4xl font-serif font-bold text-gray-900 mb-2">
@@ -151,6 +173,14 @@ export default function StudentDashboard() {
                         Join a New Class
                     </motion.button>
                 </motion.div>
+
+                {/* My Materials Section */}
+                <div className="mb-12">
+                    <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">
+                        My Materials
+                    </h2>
+                    <StudentMaterials />
+                </div>
 
                 {/* Classes Section */}
                 <div className="mb-8">
@@ -249,6 +279,94 @@ export default function StudentDashboard() {
                         </div>
                     )}
                 </div>
+
+                {/* Discussions Section */}
+                {classes.length > 0 && (
+                    <div className="mb-12">
+                        <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">
+                            Discussions
+                        </h2>
+
+                        {/* Class Selector for Discussions */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Select Class
+                            </label>
+                            <select
+                                value={selectedClassForDiscussions || ''}
+                                onChange={(e) => setSelectedClassForDiscussions(e.target.value)}
+                                className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white min-w-[300px]"
+                            >
+                                <option value="">Choose a class...</option>
+                                {classes.map((cls) => (
+                                    <option key={cls.id} value={cls.id}>
+                                        {cls.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {selectedClassForDiscussions ? (
+                            <DiscussionBoard
+                                classId={selectedClassForDiscussions}
+                                materialId={null}
+                                isTeacher={false}
+                                currentUserId={profile?.id}
+                            />
+                        ) : (
+                            <div className="text-center py-12 bg-white rounded-2xl border-2 border-gray-100">
+                                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-600 font-medium">Select a class to view discussions</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Join class conversations and collaborate with peers
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Study Groups Section */}
+                {classes.length > 0 && (
+                    <div className="mb-12">
+                        <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">
+                            Study Groups
+                        </h2>
+
+                        {/* Class Selector for Study Groups */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Select Class
+                            </label>
+                            <select
+                                value={selectedClassForGroups || ''}
+                                onChange={(e) => setSelectedClassForGroups(e.target.value)}
+                                className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white min-w-[300px]"
+                            >
+                                <option value="">Choose a class...</option>
+                                {classes.map((cls) => (
+                                    <option key={cls.id} value={cls.id}>
+                                        {cls.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {selectedClassForGroups ? (
+                            <StudyGroups
+                                classId={selectedClassForGroups}
+                                currentUserId={profile?.id}
+                            />
+                        ) : (
+                            <div className="text-center py-12 bg-white rounded-2xl border-2 border-gray-100">
+                                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-600 font-medium">Select a class to view study groups</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Create or join study groups to collaborate with classmates
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Join Class Modal */}

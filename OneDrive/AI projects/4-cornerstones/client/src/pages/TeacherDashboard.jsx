@@ -10,14 +10,27 @@ import {
     Loader2,
     ExternalLink,
     Settings,
+    FileText,
+    Upload as UploadIcon,
+    BarChart3,
 } from 'lucide-react';
 import { createClass, getMyClasses } from '../services/classService';
 import { supabase } from '../supabaseClient';
+import MaterialLibrary from '../components/MaterialLibrary';
+import UploadMaterial from '../components/UploadMaterial';
+import ShareMaterialModal from '../components/ShareMaterialModal';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import NotificationCenter from '../components/NotificationCenter';
 
 export default function TeacherDashboard() {
+    const [activeTab, setActiveTab] = useState('classes'); // 'classes', 'materials', or 'analytics'
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [selectedMaterial, setSelectedMaterial] = useState(null);
+    const [selectedClass, setSelectedClass] = useState(null);
     const [copiedCode, setCopiedCode] = useState(null);
     const [profile, setProfile] = useState(null);
 
@@ -94,6 +107,21 @@ export default function TeacherDashboard() {
                 className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-tr from-purple-600 to-amber-500 rounded-lg"></div>
+                            <span className="font-serif font-bold text-xl tracking-tight">4 Cornerstones</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <NotificationCenter />
+                            <button
+                                onClick={() => supabase.auth.signOut()}
+                                className="text-sm text-gray-500 hover:text-red-500 transition-colors font-medium"
+                            >
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-4xl font-serif font-bold text-gray-900 mb-2">
@@ -121,17 +149,85 @@ export default function TeacherDashboard() {
                         )}
                     </div>
                 </div>
+
+                {/* Tabs Navigation */}
+                <div className="border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex gap-8">
+                            <button
+                                onClick={() => setActiveTab('classes')}
+                                className={`relative py-4 px-2 font-semibold transition-colors ${
+                                    activeTab === 'classes'
+                                        ? 'text-purple-600'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <BookOpen className="w-5 h-5" />
+                                    <span>My Classes</span>
+                                </div>
+                                {activeTab === 'classes' && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
+                                    />
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('materials')}
+                                className={`relative py-4 px-2 font-semibold transition-colors ${
+                                    activeTab === 'materials'
+                                        ? 'text-purple-600'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <FileText className="w-5 h-5" />
+                                    <span>Materials Library</span>
+                                </div>
+                                {activeTab === 'materials' && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
+                                    />
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('analytics')}
+                                className={`relative py-4 px-2 font-semibold transition-colors ${
+                                    activeTab === 'analytics'
+                                        ? 'text-purple-600'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <BarChart3 className="w-5 h-5" />
+                                    <span>Analytics</span>
+                                </div>
+                                {activeTab === 'analytics' && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
+                                    />
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </motion.div>
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                {/* Stats Overview */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
-                >
+                {/* Classes Tab Content */}
+                {activeTab === 'classes' && (
+                    <>
+                        {/* Stats Overview */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
+                        >
                     <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-100">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -276,7 +372,140 @@ export default function TeacherDashboard() {
                         ))}
                     </div>
                 )}
+                </>
+                )}
+
+                {/* Materials Tab Content */}
+                {activeTab === 'materials' && (
+                    <>
+                        {/* Upload Button */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="mb-8"
+                        >
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setShowUploadModal(true)}
+                                className="w-full md:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 font-semibold text-lg"
+                            >
+                                <UploadIcon className="w-6 h-6" />
+                                Upload New Material
+                            </motion.button>
+                        </motion.div>
+
+                        {/* Material Library */}
+                        <MaterialLibrary
+                            onShareClick={(material) => {
+                                setSelectedMaterial(material);
+                                setShowShareModal(true);
+                            }}
+                        />
+                    </>
+                )}
+
+                {/* Analytics Tab Content */}
+                {activeTab === 'analytics' && (
+                    <>
+                        {/* Class Selector */}
+                        {classes.length > 0 ? (
+                            <>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="mb-8"
+                                >
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Select Class to View Analytics
+                                    </label>
+                                    <select
+                                        value={selectedClass || ''}
+                                        onChange={(e) => setSelectedClass(e.target.value)}
+                                        className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white min-w-[300px]"
+                                    >
+                                        <option value="">Choose a class...</option>
+                                        {classes.map((cls) => (
+                                            <option key={cls.id} value={cls.id}>
+                                                {cls.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </motion.div>
+
+                                {/* Analytics Dashboard */}
+                                {selectedClass ? (
+                                    <AnalyticsDashboard
+                                        classId={selectedClass}
+                                        className={classes.find((c) => c.id === selectedClass)?.name}
+                                    />
+                                ) : (
+                                    <div className="text-center py-12 bg-white rounded-2xl border-2 border-gray-100">
+                                        <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <BarChart3 className="w-10 h-10 text-purple-600" />
+                                        </div>
+                                        <h3 className="text-xl font-serif font-bold text-gray-900 mb-2">
+                                            Select a Class
+                                        </h3>
+                                        <p className="text-gray-600">
+                                            Choose a class from the dropdown to view detailed analytics
+                                        </p>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-center py-12 bg-white rounded-2xl border-2 border-gray-100">
+                                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <BookOpen className="w-10 h-10 text-purple-600" />
+                                </div>
+                                <h3 className="text-xl font-serif font-bold text-gray-900 mb-2">
+                                    No Classes Yet
+                                </h3>
+                                <p className="text-gray-600 mb-6">
+                                    Create a class first to view analytics
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        setActiveTab('classes');
+                                        setShowCreateModal(true);
+                                    }}
+                                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors"
+                                >
+                                    Create Your First Class
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
+
+            {/* Modals */}
+            {showUploadModal && (
+                <UploadMaterial
+                    onUploadComplete={(material) => {
+                        setShowUploadModal(false);
+                        // Refresh material library
+                    }}
+                    onClose={() => setShowUploadModal(false)}
+                />
+            )}
+
+            {showShareModal && selectedMaterial && (
+                <ShareMaterialModal
+                    material={selectedMaterial}
+                    classes={classes}
+                    onClose={() => {
+                        setShowShareModal(false);
+                        setSelectedMaterial(null);
+                    }}
+                    onShare={() => {
+                        setShowShareModal(false);
+                        setSelectedMaterial(null);
+                    }}
+                />
+            )}
 
             {/* Create Class Modal */}
             <CreateClassModal
